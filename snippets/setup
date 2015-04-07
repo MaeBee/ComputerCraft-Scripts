@@ -1,0 +1,2 @@
+local computerName = read()
+os.setComputerLabel(computerName)

@@ -1,0 +1,18 @@
+os.loadAPI("apis/gobText")
+os.loadAPI("apis/gobConfig")
+gobText.writeLine("gobOS")
+gobText.writeLine("Login:")
+local login = gobText.readLine()
+gobText.writeLine("Password:")
+local password = gobText.readLine("*")
+gobText.writeLine("User " .. login .. " logged in with password " .. password)
+local config = gobConfig.read("config/testConfig")
+for var, val in pairs(config) do
+  gobText.writeLine(var .. " = " .. val)
+end
+gobText.writeLine("New config variable name:")
+local newvar = gobText.readLine()
+gobText.writeLine("New config value:")
+local newval = gobText.readLine()
+config[newvar] = newval
+gobConfig.write("config/testConfig", config)

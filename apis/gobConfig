@@ -1,0 +1,22 @@
+function read(file)
+  local configFile = fs.open(file, "r")
+  local returnConfig = {}
+  repeat
+    local line = configFile.readLine()
+	if line ~= nil then
+	  local split = string.find(line, " = ")
+	  local pre = string.sub(line, 1, split - 1)
+	  local val = string.sub(line, split + 3)
+	  returnConfig[pre] = val
+	 end
+	until line == nil
+	return returnConfig
+end
+
+function write(file, config)
+  local configFile = fs.open(file, "w")
+  for var, val in pairs(config) do
+    configFile.writeLine(var .. " = " .. val)
+  end
+  configFile.close()
+end
