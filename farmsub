@@ -1,4 +1,15 @@
 local name = "farmsub1"
+local modemside = "right"
+local redside = "front"
+
+local systems["Light1"] = colors.red
+local systems["Water1"] = colors.green
+local systems["Light2"] = colors.brown
+local systems["Water2"] = colors.blue
+local systems["Light3"] = colors.purple
+local systems["Water3"] = colors.cyan
+local systems["Light4"] = colors.lightGray
+local systems["Water4"] = colors.gray
 
 os.loadAPI("apis/gobText")
 
@@ -6,13 +17,22 @@ gobText.writeLine("Farm Manager")
 gobText.writeLine("Subsystem")
 gobText.writeLine("APIs loaded")
 
-rednet.open("right")
-rednet.host("farmsub")
+rednet.open(modemside)
+rednet.host("farmsub", name)
 
 gobText.writeLine("Network service started")
 
 function getStatus()
+  -- get status of all elements
   return "A-OK!"
+end
+
+function toggleSystem(system)
+  if colors.test(redstone.getBundledOutput(redside), systems[system]) then
+    redstone.setBundledOutput(redside, colors.subtract(redstone.getBundledOutput(redside), systems[system])
+  else
+    redstone.setBundledOutput(redside, colors.combine(redstone.getBundledOutput(redside), systems[system])
+  end
 end
 
 sleep(1)
@@ -21,13 +41,17 @@ rednet.broadcast(name, "farmmastersignin")
 local loop = true
 
 while loop do
-  event, senderId, message, protocol = os.pullEvent("rednet_message")
+  local event, senderId, message, protocol = os.pullEvent("rednet_message")
   if protocol == "farmsub" then
-    gobText.writeLine(senderId .. " stold me to " .. message)
+    gobText.writeLine(senderId .. " told me to " .. message)
 	if message == "getStatus" then
 	  local status = getStatus()
 	  gobText.writeLine("Status is " .. status .. ". Telling " .. senderId)
 	  rednet.send(senderId, status, "farmmasterstatus")
+	end
+	if string.starts(message, "toggleSystem") then
+      gobText.writeLine(senderId .. " wants me to toggle " .. string.sub(message, 14))
+	  toggleSystem(string.sub(message, 14))
 	end
   end
 end
