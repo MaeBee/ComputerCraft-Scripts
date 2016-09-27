@@ -1,0 +1,33 @@
+local name = "farmsub1"
+
+os.loadAPI("apis/gobText")
+
+gobText.writeLine("Farm Manager")
+gobText.writeLine("Subsystem")
+gobText.writeLine("APIs loaded")
+
+rednet.open("right")
+rednet.host("farmsub")
+
+gobText.writeLine("Network service started")
+
+function getStatus()
+  return "A-OK!"
+end
+
+sleep(1)
+gobText.writeLine("Contacting Master")
+rednet.broadcast(name, "farmmastersignin")
+local loop = true
+
+while loop do
+  event, senderId, message, protocol = os.pullEvent("rednet_message")
+  if protocol == "farmsub" then
+    gobText.writeLine(senderId .. " stold me to " .. message)
+	if message == "getStatus" then
+	  local status = getStatus()
+	  gobText.writeLine("Status is " .. status .. ". Telling " .. senderId)
+	  rednet.send(senderId, status, "farmmasterstatus")
+	end
+  end
+end
