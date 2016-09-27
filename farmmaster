@@ -34,11 +34,13 @@ rx.on("rednet_message", function(senderId, message, protocol)
   end
 end)
 
-rx.on("monitor_touch", function(side, xPos, yPos)
+rx.run()
+
+local loop = true
+while loop do
+  local mevent, side, xPos, yPos = os.pullEvent("monitor_touch")
   if side == moniside then
     rednet.send(rednet.lookup("farmsub", "farmsub1"), "toggleSystem Light1", "farmsub")
 	gobText.writeLine("Telling " .. rednet.lookup("farmsub", "farmsub1") .. "to toggle Light1")
   end
-end)
-
-rx.run()
+end
