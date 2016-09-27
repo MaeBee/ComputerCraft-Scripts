@@ -2,16 +2,10 @@ local name = "farmsub1"
 local modemside = "right"
 local redside = "front"
 
-local systems["Light1"] = colors.red
-local systems["Water1"] = colors.green
-local systems["Light2"] = colors.brown
-local systems["Water2"] = colors.blue
-local systems["Light3"] = colors.purple
-local systems["Water3"] = colors.cyan
-local systems["Light4"] = colors.lightGray
-local systems["Water4"] = colors.gray
+local systems = {["Light1"]=colors.red,["Water1"]=colors.green,["Light2"]=colors.brown,["Water2"]=colors.blue,["Light3"]=colors.purple,["Water3"]=colors.cyan,["Light4"]=colors.lightGray,["Water4"]=colors.gray}
 
 os.loadAPI("apis/gobText")
+os.loadAPI("apis/rx")
 
 gobText.writeLine("Farm Manager")
 gobText.writeLine("Subsystem")
@@ -29,9 +23,9 @@ end
 
 function toggleSystem(system)
   if colors.test(redstone.getBundledOutput(redside), systems[system]) then
-    redstone.setBundledOutput(redside, colors.subtract(redstone.getBundledOutput(redside), systems[system])
+    redstone.setBundledOutput(redside, colors.subtract(redstone.getBundledOutput(redside), systems[system]))
   else
-    redstone.setBundledOutput(redside, colors.combine(redstone.getBundledOutput(redside), systems[system])
+    redstone.setBundledOutput(redside, colors.combine(redstone.getBundledOutput(redside), systems[system]))
   end
 end
 
@@ -49,7 +43,7 @@ while loop do
 	  gobText.writeLine("Status is " .. status .. ". Telling " .. senderId)
 	  rednet.send(senderId, status, "farmmasterstatus")
 	end
-	if string.starts(message, "toggleSystem") then
+	if string.find(message, "toggleSystem") then
       gobText.writeLine(senderId .. " wants me to toggle " .. string.sub(message, 14))
 	  toggleSystem(string.sub(message, 14))
 	end

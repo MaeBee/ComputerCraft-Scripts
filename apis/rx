@@ -1,0 +1,209 @@
+-- Responder (wraps functions in coroutines)
+--
+
+-- https://github.com/chrisfarber/computercraft-apis/
+
+Responder = {}
+Responder.__index = Responder
+
+function Responder:new(functionToWrap)
+  assert(self, "missing receiver")
+  local r = setmetatable({}, self)
+  r.func = functionToWrap
+  r.co = coroutine.create(r.func)
+  return r
+end
+
+function Responder:__call(...)
+  if self:canResume() then
+    local _, check = coroutine.resume(self.co, ...)
+    self.check = check
+    return true
+  else
+    return false
+  end
+end
+
+function Responder:finished()
+  return coroutine.status(self.co) == "dead"
+end
+
+function Responder:canResume()
+  if not self:finished() then
+    if self.check then
+      return self:check()
+    else
+      return true
+    end
+  end
+  return false
+end
+
+-- EventTable class
+--
+
+EventTable = {}
+EventTable.__index = EventTable
+
+function EventTable:on(optsOrName, f)
+  local name
+  local opts = {}
+  if type(optsOrName) == "table" then
+    opts = optsOrName
+    name = opts.event
+  else
+    name = optsOrName
+  end
+  assert(type(name) == "string" and name ~= "", "an event name must be supplied")
+
+  if f then
+    opts.f = f
+  end
+  assert(type(opts.f) == "function", "a handler must be supplied")
+
+  local responders = self[name] or {}
+  table.insert(responders, opts)
+  self[name] = responders
+end
+
+function EventTable:off(name, responder)
+  local responders = self[name]
+  if responder and responders then
+    local newResponders = {}
+    for i=1,#responders do
+      if responders[i].f ~= responder then
+        table.insert(newResponders, responders[i])
+      end
+    end
+    self[name] = newResponders
+  else
+    self[name] = {}
+  end
+end
+
+function EventTable:dispatch(name, ...)
+  local responders = self[name] or {}
+  local preservedResponders = {}
+  local sent = false
+  for i, responder in ipairs(responders) do
+    if type(responder.filter) == "function" and not responder.filter(...) then
+      table.insert(preservedResponders, responder)
+      break
+    end
+
+    local f = Responder:new(responder.f)
+    f(...)
+    if not f:finished() then
+      self:addResponder(f)
+    end
+    sent = true
+    if not responder.once then
+      table.insert(preservedResponders, responder)
+    end
+  end
+  self[name] = preservedResponders
+  return sent
+end
+
+function EventTable:addResponder(responder)
+  table.insert(self._unfinishedResponders, responder)
+end
+
+function EventTable:resume()
+  local newUnfinishedResponders = {}
+  for _, responder in ipairs(self._unfinishedResponders) do
+    responder()
+    if not responder:finished() then
+      table.insert(newUnfinishedResponders, responder)
+    end
+  end
+  self._unfinishedResponders = newUnfinishedResponders
+end
+
+function EventTable:new()
+  assert(self, "missing receiver")
+  local et = setmetatable({}, self)
+  et._unfinishedResponders = {}
+  return et
+end
+
+-- create the event table for handling OS events
+--
+
+local osEvents = EventTable:new()
+
+function on(...)
+  return osEvents:on(...)
+end
+
+function off(...)
+  return osEvents:off(...)
+end
+
+function add(func)
+  local responder = Responder:new(func)
+  osEvents:addResponder(responder)
+end
+
+function queue(...)
+  os.queueEvent(...)
+end
+
+-- convenience
+--
+
+function waitUntil(checkFunc)
+  coroutine.yield(checkFunc)
+end
+
+-- Timers
+--
+
+function wait(seconds)
+  local ourID = os.startTimer(seconds)
+  local fired = false
+
+  on {
+    event = "timer",
+    filter = function(timerID)
+      return timerID == ourID
+    end,
+    once = true,
+    f = function()
+      fired = true
+    end
+  }
+
+  waitUntil(function() return fired end)
+end
+
+-- Running
+--
+
+function run(mainFunction)
+  -- run the main function, if supplied
+  if mainFunction then
+    add(mainFunction)
+    osEvents:resume()
+  end
+
+  while true do
+    -- wait for events
+    local event = {os.pullEventRaw()}
+    local eventName = event[1]
+
+    -- dispatch the event
+    local handled = osEvents:dispatch(unpack(event))
+
+    -- abort the loop if terminate is unhandled
+    if not handled then
+      if eventName == "terminate" then
+        print("Shutting down")
+        break
+      end
+    end
+
+    -- resume any running handlers
+    osEvents:resume()
+  end
+end
