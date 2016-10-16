@@ -1,0 +1,51 @@
+local name = "farmmaster"
+local moniside = "left"
+local modemside = "right"
+
+term.clear()
+term.setCursorPos(1,1)
+
+os.loadAPI("apis/gobText")
+
+gobText.writeLine("Farm Manager")
+gobText.writeLine("Master")
+gobText.writeLine("APIs loaded")
+
+rednet.open(modemside)
+rednet.host("farmmasterstatus", name)
+rednet.host("farmmastersignin", name)
+
+gobText.writeLine("Network service started")
+
+monitor = peripheral.wrap(moniside)
+gobText.writeLine("Monitor initialised")
+
+function update()
+  -- clear screen
+  for i, v in ipairs(rednet.lookup("farmsub")) do
+    -- build button to open details
+  end
+end
+
+function network()
+  local event, senderId, message, protocol = os.pullEvent("rednet_message")
+  if protocol == "farmmastersignin" then
+    gobText.writeLine(senderId .. " signed in as " .. message)
+	rednet.send(senderId, "getStatus", "farmsub")
+  elseif protocol == "farmmasterstatus" then
+    gobText.writeLine(senderId .. "'s status is " .. message)
+  end
+end
+
+function monitor()
+  local loop = true
+  while loop do
+    local mevent, side, xPos, yPos = os.pullEvent("monitor_touch")
+    if side == moniside then
+      rednet.send(rednet.lookup("farmsub", "farmsub1"), "toggleSystem Light1", "farmsub")
+      gobText.writeLine("Telling " .. rednet.lookup("farmsub", "farmsub1") .. "to toggle Light1")
+    end
+  end
+end
+
+parallel.waitForAny(network, monitor)
