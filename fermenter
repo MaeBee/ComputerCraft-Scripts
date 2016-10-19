@@ -1,0 +1,34 @@
+local ferm = peripheral.wrap("left")
+local moni = peripheral.wrap("top")
+local red = "back"
+local target = 35
+
+local redstate = false
+local loop = true
+
+function setRed(newstate)
+  redstone.setOutput(red, newstate)
+  redstate = newstate
+end
+
+function getTemp()
+  return ferm.getTemperature()
+end
+
+function update()
+  moni.clear()
+  moni.setCursorPos(1,1)
+  moni.write ("T=" .. getTemp() .. "C")
+  moni.setCursorPos(1,2)
+  moni.write ("R=" .. tostring(redstate))
+end
+
+while loop do
+  if getTemp() < target then
+    setRed(true)
+  elseif getTemp() > target then
+    setRed(false)
+  end
+  update()
+  sleep(1)
+end

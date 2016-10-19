@@ -1,0 +1,66 @@
+function find(item)
+  for i=1,16 do
+    turtle.select(i)
+    local data = turtle.getItemDetail()
+	   if data then
+	     if data.name == item then
+	       return true
+	     end
+	   end
+  end
+  return false
+end
+
+function dig()
+  while turtle.detect() do
+    turtle.dig()
+	   os.sleep(0.5)
+  end
+end
+
+function digUp()
+  while turtle.detectUp() do
+    turtle.digUp()
+	   os.sleep(0.5)
+  end
+end
+
+function placeTorch()
+  if find("minecraft:torch") or find("TConstruct:decoration.stonetorch") then
+    turtle.back()
+	   turtle.place()
+	   turtle.forward()
+  end
+end
+
+function placeTorchUp()
+  if find("minecraft:torch") or find("TConstruct:decoration.stonetorch") then
+    turtle.up()
+    digUp()
+	   turtle.placeUp()
+    turtle.down()
+  end
+end
+
+function digTwoOne()
+  dig()
+  turtle.forward()
+  digUp()
+end
+
+function digShaft(length)
+  length=tonumber(length)
+  for i=1,length do
+    digTwoOne()
+  end
+end
+ 
+function digShaftTorches(length,torchevery)
+  length=tonumber(length)
+  torchevery=tonumber(torchevery)
+  iterations=math.floor(length/torchevery)
+  for i=1,iterations do
+    digShaft(torchevery)
+	   placeTorchUp()
+  end
+end

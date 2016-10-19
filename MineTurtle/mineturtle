@@ -1,0 +1,18 @@
+os.loadAPI("APIs/gobTurtle")
+
+function turnAround()
+  turtle.turnLeft()
+  gobTurtle.digShaft(3)
+  turtle.turnLeft()
+end
+
+function reset()
+  turtle.turnRight()
+  gobTurtle.digShaft(3)
+  turtle.turnRight()
+end
+
+gobTurtle.digShaftTorches(60,5)
+turnAround()
+gobTurtle.digShaftTorches(60,5)
+reset()
